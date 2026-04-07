@@ -103,6 +103,11 @@ Jeśli zapytanie połączone jest z niezrozumiałym ruchem, zapytaj o doprecyzow
                 'command': parsed.get('direction', 'przód'),
                 'value': parsed.get('value', 0)
             })
+        else:
+            # Wysyłka odpowiedzi do robota (wyświetlanie na ekraniku)
+            socketio.emit('chat_response', {
+                'response': parsed.get('response', '')
+            })
             
         return jsonify(parsed)
         

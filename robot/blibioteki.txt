@@ -1,0 +1,3 @@
+WebSockets (by Markus Sattler / Links2004) – do łączenia z SocketIO v4.
+ArduinoJson (by Benoit Blanchon) – do interpretowania wiadomości.
+Adafruit SSD1306 (oraz Adafruit GFX Library jako zależność) – do sterowania ekranem OLED.
