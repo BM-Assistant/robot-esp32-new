@@ -26,7 +26,13 @@ SocketIOclient socketIO;
 #define IN3 33
 #define IN4 32
 
-const int speedPWM = 200; // UWAGA TUTAJ!!!!!
+const int speedPWM = 150; // Prędkość jazdy (odpowiednik testDriveSpeed)
+const int freq = 5000;
+const int resolution = 8;
+
+const int kickSpeed = 255;  
+const int holdSpeed = 100;  
+const int kickTime = 150;
 
 // Ekran I2C (SDA=27, SCL=14)
 #define I2C_SDA 27
@@ -69,13 +75,17 @@ void playBeep() {
 }
 
 // --- Funkcje ruchu ---
+void wyprostujKola() {
+    ledcWrite(ENB, 0);
+    digitalWrite(IN3, LOW);
+    digitalWrite(IN4, LOW);
+}
+
 void stopMotors() {
     digitalWrite(IN1, LOW);
     digitalWrite(IN2, LOW);
-    digitalWrite(IN3, LOW);
-    digitalWrite(IN4, LOW);
-    analogWrite(ENA, 0);
-    analogWrite(ENB, 0);
+    ledcWrite(ENA, 0);
+    wyprostujKola();
     isMoving = false;
     isTurning = false;
 }
@@ -83,12 +93,10 @@ void stopMotors() {
 void moveForward(int durationMs) {
     digitalWrite(IN1, HIGH);
     digitalWrite(IN2, LOW);
-    analogWrite(ENA, speedPWM);
+    ledcWrite(ENA, speedPWM);
     
     // Ustawienie blokady skrętu do zera żeby jechał prosto
-    digitalWrite(IN3, LOW);
-    digitalWrite(IN4, LOW);
-    analogWrite(ENB, 0);
+    wyprostujKola();
 
     actionEndTime = millis() + durationMs;
     isMoving = true;
@@ -98,11 +106,9 @@ void moveForward(int durationMs) {
 void moveBackward(int durationMs) {
     digitalWrite(IN1, LOW);
     digitalWrite(IN2, HIGH);
-    analogWrite(ENA, speedPWM);
+    ledcWrite(ENA, speedPWM);
 
-    digitalWrite(IN3, LOW);
-    digitalWrite(IN4, LOW);
-    analogWrite(ENB, 0);
+    wyprostujKola();
 
     actionEndTime = millis() + durationMs;
     isMoving = true;
@@ -110,33 +116,37 @@ void moveBackward(int durationMs) {
 }
 
 void turnLeft(int durationMs) {
-    // Skręt (silnik przedni)
-    digitalWrite(IN3, HIGH);
-    digitalWrite(IN4, LOW);
-    analogWrite(ENB, speedPWM);
+    // Skręt (silnik przedni w lewo)
+    digitalWrite(IN3, LOW);
+    digitalWrite(IN4, HIGH);
+    ledcWrite(ENB, kickSpeed);
+    delay(kickTime);
+    ledcWrite(ENB, holdSpeed);
     
-    // W trakcie jazdy skręca: jedzie do przodu na silniku skrętu
+    // W trakcie jazdy skręca: jedzie do przodu
     digitalWrite(IN1, HIGH);
     digitalWrite(IN2, LOW);
-    analogWrite(ENA, speedPWM);
+    ledcWrite(ENA, speedPWM);
 
-    actionEndTime = millis() + durationMs;
+    actionEndTime = millis() + (durationMs > kickTime ? durationMs - kickTime : 0);
     isMoving = true;
     isTurning = true;
 }
 
 void turnRight(int durationMs) {
-    // Skręt (silnik przedni w drugą stronę)
-    digitalWrite(IN3, LOW);
-    digitalWrite(IN4, HIGH);
-    analogWrite(ENB, speedPWM);
+    // Skręt (silnik przedni w prawo)
+    digitalWrite(IN3, HIGH);
+    digitalWrite(IN4, LOW);
+    ledcWrite(ENB, kickSpeed);
+    delay(kickTime);
+    ledcWrite(ENB, holdSpeed);
     
-    // W trakcie jazdy skręca
+    // W trakcie jazdy skręca: jedzie do przodu
     digitalWrite(IN1, HIGH);
     digitalWrite(IN2, LOW);
-    analogWrite(ENA, speedPWM);
+    ledcWrite(ENA, speedPWM);
 
-    actionEndTime = millis() + durationMs;
+    actionEndTime = millis() + (durationMs > kickTime ? durationMs - kickTime : 0);
     isMoving = true;
     isTurning = true;
 }
@@ -202,12 +212,13 @@ void setup() {
     Serial.begin(115200);
 
     // Konfiguracja pinów mostka L298N
-    pinMode(ENA, OUTPUT);
     pinMode(IN1, OUTPUT);
     pinMode(IN2, OUTPUT);
-    pinMode(ENB, OUTPUT);
     pinMode(IN3, OUTPUT);
     pinMode(IN4, OUTPUT);
+
+    ledcAttach(ENA, freq, resolution);
+    ledcAttach(ENB, freq, resolution);
     stopMotors();
 
     // Konfiguracja pinu audio
