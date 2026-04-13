@@ -5,7 +5,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>BM Assistant</title>
+
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
+
     <style>
         body {
             font-family: 'Inter', sans-serif;
@@ -64,13 +66,11 @@
         .message.user {
             background-color: #3b82f6;
             align-self: flex-end;
-            border-bottom-right-radius: 0;
         }
 
         .message.bot {
             background-color: #475569;
             align-self: flex-start;
-            border-bottom-left-radius: 0;
         }
 
         .message.system {
@@ -95,7 +95,6 @@
             color: #f8fafc;
             font-size: 1rem;
             outline: none;
-            transition: border-color 0.2s;
         }
 
         input[type="text"]:focus {
@@ -103,24 +102,26 @@
         }
 
         button {
-            padding: 12px 24px;
+            padding: 12px 18px;
             border-radius: 8px;
             border: none;
             background: linear-gradient(90deg, #3b82f6, #6366f1);
             color: white;
             font-weight: 600;
-            font-size: 1rem;
             cursor: pointer;
-            transition: transform 0.1s, opacity 0.2s;
+        }
+
+        #mic-btn {
+            background: #334155;
+            font-size: 1.2rem;
+        }
+
+        #mic-btn:hover {
+            background: #475569;
         }
 
         button:hover {
             opacity: 0.9;
-            transform: translateY(-1px);
-        }
-
-        button:active {
-            transform: translateY(1px);
         }
 
         .controls-container {
@@ -134,174 +135,149 @@
         .controls-container button {
             padding: 15px;
             font-size: 1.5rem;
-            display: flex;
-            justify-content: center;
-            align-items: center;
             background-color: #334155;
-            transition: background-color 0.2s, transform 0.1s;
         }
 
         .controls-container button:hover {
             background-color: #475569;
-            opacity: 1;
         }
 
-        .control-up {
-            grid-column: 2;
-        }
+        .control-up { grid-column: 2; }
+        .control-left { grid-column: 1; }
+        .control-down { grid-column: 2; }
+        .control-right { grid-column: 3; }
 
-        .control-left {
-            grid-column: 1;
-        }
-
-        .control-down {
-            grid-column: 2;
-        }
-
-        .control-right {
-            grid-column: 3;
-        }
-
-        /* Mobile optimization */
-        @media (max-width: 600px) {
-            body {
-                padding: 1rem;
-            }
-
-            .chat-container {
-                padding: 1.2rem;
-            }
-
-            .messages-box {
-                min-height: 250px;
-            }
-
-            h1 {
-                font-size: 1.8rem;
-                margin-bottom: 1rem;
-            }
-
-            .input-group {
-                flex-direction: column;
-            }
-
-            button {
-                width: 100%;
-            }
-
-            .controls-container button {
-                width: auto;
-            }
-        }
     </style>
 </head>
 
 <body>
 
-    <h1>BM Assistant sterowanie </h1>
+<h1>BM Assistant sterowanie</h1>
 
-    <div class="chat-container">
-        <div class="messages-box" id="messages-box">
-            <div class="message system">Oczekiwanie na zainicjowanie komunikacji...</div>
-        </div>
+<div class="chat-container">
 
-        <div class="controls-container">
-            <div></div>
-            <button class="control-up" onclick="sendMove('przód')">⬆️</button>
-            <div></div>
-            <button class="control-left" onclick="sendMove('lewo')">⬅️</button>
-            <button class="control-down" onclick="sendMove('tył')">⬇️</button>
-            <button class="control-right" onclick="sendMove('prawo')">➡️</button>
-        </div>
-
-        <div class="input-group">
-            <input type="text" id="prompt-input" placeholder="Powiedz robotowi co ma zrobić, lub zadaj pytanie..."
-                autocomplete="off">
-            <button id="send-btn">Wyślij</button>
-        </div>
+    <div class="messages-box" id="messages-box">
+        <div class="message system">Oczekiwanie na połączenie...</div>
     </div>
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.5.4/socket.io.js"></script>
-    <script>
-        const promptInput = document.getElementById('prompt-input');
-        const sendBtn = document.getElementById('send-btn');
-        const messagesBox = document.getElementById('messages-box');
+    <div class="controls-container">
+        <div></div>
+        <button class="control-up" onclick="sendMove('przód')">⬆️</button>
+        <div></div>
 
-        function addMessage(text, role) {
-            const div = document.createElement('div');
-            div.className = `message ${role}`;
-            div.textContent = text;
-            messagesBox.appendChild(div);
-            messagesBox.scrollTop = messagesBox.scrollHeight;
-        }
+        <button class="control-left" onclick="sendMove('lewo')">⬅️</button>
+        <button class="control-down" onclick="sendMove('tył')">⬇️</button>
+        <button class="control-right" onclick="sendMove('prawo')">➡️</button>
+    </div>
 
-        // --- Inicjalizacja Socket.IO ---
-        addMessage("Nawiązanie połączenia z serwerem...", 'system');
-        const socket = io(); // Podłącza się automatycznie pod ten sam adres
+    <div class="input-group">
+        <input type="text" id="prompt-input" placeholder="Powiedz robotowi co ma zrobić...">
 
-        socket.on('connect', () => {
-            addMessage("Połączono z kanałem na żywo Socket.IO!", 'system');
-        });
+        <button id="mic-btn">🎤</button>
+        <button id="send-btn">Wyślij</button>
+    </div>
 
-        socket.on('server_response', (data) => {
-            addMessage(`Serwer: ${data.data}`, 'system');
-        });
+</div>
 
-        socket.on('disconnect', () => {
-            addMessage("Rozłączono z serwerem!", 'system');
-        });
-        // -------------------------------
+<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.5.4/socket.io.js"></script>
 
-        async function sendMove(direction) {
-            try {
-                await fetch('/api/move', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ direction: direction })
-                });
-                addMessage(`Ręczne sterowanie: ${direction.toUpperCase()}`, 'system');
-            } catch (err) {
-                addMessage("Błąd sterowania ręcznego.", 'system');
-            }
-        }
+<script>
+const promptInput = document.getElementById("prompt-input");
+const sendBtn = document.getElementById("send-btn");
+const micBtn = document.getElementById("mic-btn");
+const messagesBox = document.getElementById("messages-box");
 
-        async function sendPrompt() {
-            const text = promptInput.value.trim();
-            if (!text) return;
+function addMessage(text, role) {
+    const div = document.createElement("div");
+    div.className = `message ${role}`;
+    div.textContent = text;
+    messagesBox.appendChild(div);
+    messagesBox.scrollTop = messagesBox.scrollHeight;
+}
 
-            addMessage(text, 'user');
-            promptInput.value = '';
+// SOCKET
+const socket = io();
 
-            try {
-                const res = await fetch('/api/prompt', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ message: text })
-                });
-                const data = await res.json();
+socket.on("connect", () => {
+    addMessage("Połączono z serwerem", "system");
+});
 
-                if (data.error) {
-                    addMessage("Błąd API: " + data.error, 'system');
-                } else if (data.response) {
-                    addMessage(data.response, 'bot');
-                } else {
-                    addMessage(JSON.stringify(data), 'bot');
-                }
-            } catch (err) {
-                addMessage("Błąd połączenia z serwerem.", 'system');
-            }
-        }
+socket.on("server_response", (data) => {
+    addMessage("Serwer: " + data.data, "system");
+});
 
-        sendBtn.addEventListener('click', sendPrompt);
-        promptInput.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') sendPrompt();
-        });
-    </script>
-    <footer>
+socket.on("disconnect", () => {
+    addMessage("Rozłączono", "system");
+});
 
-        ©️2026 by Bartosz Leśniak - BM Assistant  
+// MOVE
+async function sendMove(direction) {
+    await fetch("/api/move", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({direction})
+    });
 
-    </footer>
+    addMessage("Ruch: " + direction, "system");
+}
+
+// PROMPT
+async function sendPrompt() {
+    const text = promptInput.value.trim();
+    if (!text) return;
+
+    addMessage(text, "user");
+    promptInput.value = "";
+
+    const res = await fetch("/api/prompt", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({message: text})
+    });
+
+    const data = await res.json();
+
+    if (data.response) addMessage(data.response, "bot");
+    else addMessage("Błąd API", "system");
+}
+
+sendBtn.onclick = sendPrompt;
+promptInput.addEventListener("keypress", e => {
+    if (e.key === "Enter") sendPrompt();
+});
+
+// MICROPHONE 🎤
+const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+const recognition = new SpeechRecognition();
+
+recognition.lang = "pl-PL";
+recognition.interimResults = false;
+recognition.continuous = false;
+
+micBtn.onclick = () => {
+    try {
+        recognition.start();
+        addMessage("🎤 Słucham...", "system");
+    } catch (e) {
+        addMessage("Mikrofon już działa", "system");
+    }
+};
+
+recognition.onresult = (event) => {
+    const text = event.results[0][0].transcript;
+
+    promptInput.value = text;
+    // addMessage("🎤 " + text, "user");
+
+    // 🔥 jeśli chcesz auto-send, odkomentuj:
+    // sendPrompt();
+};
+
+recognition.onerror = (e) => {
+    addMessage("Błąd mikrofonu: " + e.error, "system");
+};
+
+</script>
+
 </body>
-
 </html>

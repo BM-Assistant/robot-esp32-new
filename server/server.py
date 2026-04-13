@@ -1,9 +1,11 @@
 import os
 import json
+import base64
 from flask import Flask, render_template, request, jsonify
 from flask_socketio import SocketIO, emit
 from dotenv import load_dotenv
 from openai import OpenAI
+from elevenlabs.client import ElevenLabs
 
 load_dotenv()
 
@@ -24,6 +26,42 @@ try:
 except Exception as e:
     print("Błąd inicjalizacji NVIDIA API:", e)
     nvidia_client = None
+
+# Inicjalizacja klienta ElevenLabs TTS
+try:
+    eleven_client = ElevenLabs(
+        api_key=os.getenv("ELEVEN_LABS_API_KEY")
+    )
+    print("ElevenLabs TTS zainicjalizowany pomyślnie")
+except Exception as e:
+    print("Błąd inicjalizacji ElevenLabs:", e)
+    eleven_client = None
+
+def generate_tts_audio(text):
+    """Generuje audio TTS z tekstu za pomocą ElevenLabs.
+    Zwraca base64-encoded ulaw audio lub None w razie błędu."""
+    if not eleven_client:
+        print("Brak klienta ElevenLabs — pomijam TTS")
+        return None
+    try:
+        audio_generator = eleven_client.text_to_speech.convert(
+            text=text,
+            voice_id="JBFqnCBsd6RMkjVDRZzb",  # Domyślny głos (George)
+            model_id="eleven_multilingual_v2",  # Wspiera język polski
+            output_format="ulaw_8000"
+        )
+        # Zbierz wszystkie chunki audio w jeden bufor
+        audio_bytes = b""
+        for chunk in audio_generator:
+            audio_bytes += chunk
+        
+        # Zakoduj jako base64 do przesłania przez SocketIO
+        audio_b64 = base64.b64encode(audio_bytes).decode('utf-8')
+        print(f"TTS wygenerowany: {len(audio_bytes)} bajtów audio, {len(audio_b64)} znaków base64")
+        return audio_b64
+    except Exception as e:
+        print(f"Błąd generowania TTS: {e}")
+        return None
 
 @app.route('/')
 def index():
@@ -108,6 +146,13 @@ Jeśli zapytanie połączone jest z niezrozumiałym ruchem, zapytaj o doprecyzow
             socketio.emit('chat_response', {
                 'response': parsed.get('response', '')
             })
+        
+        # Generowanie TTS z odpowiedzi i wysyłka audio do robota
+        response_text = parsed.get('response', '')
+        if response_text:
+            audio_b64 = generate_tts_audio(response_text)
+            if audio_b64:
+                socketio.emit('audio_response', {'audio': audio_b64})
             
         return jsonify(parsed)
         
@@ -124,6 +169,18 @@ def handle_move():
         'command': direction,
         'value': 1
     })
+    
+    # Krótki TTS potwierdzający kierunek
+    direction_names = {
+        'przód': 'Do przodu',
+        'tył': 'Do tyłu',
+        'lewo': 'W lewo',
+        'prawo': 'W prawo'
+    }
+    tts_text = direction_names.get(direction, direction)
+    audio_b64 = generate_tts_audio(tts_text)
+    if audio_b64:
+        socketio.emit('audio_response', {'audio': audio_b64})
     
     return jsonify({"status": "ok", "direction": direction})
 

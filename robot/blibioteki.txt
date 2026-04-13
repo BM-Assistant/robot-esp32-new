@@ -1,3 +1,8 @@
 WebSockets (by Markus Sattler / Links2004) – do łączenia z SocketIO v4.
 ArduinoJson (by Benoit Blanchon) – do interpretowania wiadomości.
 Adafruit SSD1306 (oraz Adafruit GFX Library jako zależność) – do sterowania ekranem OLED.
+
+--- Wbudowane (nie wymagają instalacji) ---
+mbedtls (base64) – dekodowanie audio z serwera (wbudowane w ESP32 Arduino Core).
+esp_timer / hw_timer – timer sprzętowy 8kHz do odtwarzania audio (wbudowany).
+DAC (dacWrite) – wyjście analogowe na pin 25 do głośnika PAM8403 (wbudowany).
