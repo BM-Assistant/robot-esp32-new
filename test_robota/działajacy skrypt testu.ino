@@ -13,8 +13,8 @@ const int SCL_PIN = 14;
 
 // Silnik Tylny (Napęd) - ZAMIENIONE PINY DLA KOREKTY KIERUNKU
 const int ENA = 13;
-const int IN1 = 4;   // Było 23
-const int IN2 = 23;  // Było 4
+const int IN1 = 23;
+const int IN2 = 4;
 
 // Silnik Przedni (Skręt)
 const int ENB = 15;
